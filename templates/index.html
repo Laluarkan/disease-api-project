@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Diagnosa Penyakit</title>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .hidden { display: none; }
+    button { margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🩺 Diagnosa Penyakit - Gejala Awal</h1>
+  <!-- Tambahkan di bawah <h1> -->
+<button onclick="resetForm()">🔄 Reset Formulir</button>
+  <div id="question-container"></div>
+  <button onclick="submitGejalaAwal()">Lihat Prediksi Awal</button>
+
+  <div id="hasil-prediksi" class="hidden">
+    <h2>🧪 Prediksi Awal</h2>
+    <ul id="prediksi-list"></ul>
+    <button onclick="lanjutPertanyaan()">Lanjut Pertanyaan Tambahan</button>
+  </div>
+
+  <div id="pertanyaan-lanjutan" class="hidden">
+    <h2>📋 Pertanyaan Tambahan</h2>
+    <div id="lanjutan-container"></div>
+    <button onclick="submitPrediksiAkhir()">Lihat Diagnosa Akhir</button>
+  </div>
+
+  <div id="hasil-akhir" class="hidden">
+    <h2>✅ Prediksi Akhir</h2>
+    <p id="final-diagnosis"></p>
+  </div>
+
+  <script>
+    const gejalaAwal = [
+      "fever", "cough", "headache", "fatigue", "muscle_pain",
+      "nausea", "vomiting", "dizziness", "diarrhoea", "itching"
+    ];
+
+    const mapping = {
+      "fever": "demam", "cough": "batuk", "headache": "sakit kepala",
+      "fatigue": "kelelahan", "muscle_pain": "nyeri otot", "nausea": "mual",
+      "vomiting": "muntah", "dizziness": "pusing", "diarrhoea": "diare",
+      "itching": "gatal"
+    };
+
+    const jawabanAwal = {};
+    const jawabanAkhir = {};
+
+    const container = document.getElementById("question-container");
+
+    gejalaAwal.forEach(gejala => {
+      const label = mapping[gejala] || gejala;
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <label>Apakah Anda mengalami ${label}?</label><br>
+        <input type="radio" name="${gejala}" value="1"> Ya
+        <input type="radio" name="${gejala}" value="0" checked> Tidak
+        <br><br>
+      `;
+      container.appendChild(div);
+    });
+
+    async function submitGejalaAwal() {
+      gejalaAwal.forEach(g => {
+        const val = document.querySelector(`input[name="${g}"]:checked`).value;
+        jawabanAwal[g] = parseInt(val);
+        jawabanAkhir[g] = parseInt(val);
+      });
+
+      const res = await fetch("/prediksi-awal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jawaban: jawabanAwal })
+      });
+
+      const data = await res.json();
+      window.top10 = data.prediksi_teratas;
+      window.top1 = data.penyakit_top1;
+
+      const list = document.getElementById("prediksi-list");
+      list.innerHTML = "";
+      window.top10.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        list.appendChild(li);
+      });
+
+      document.getElementById("hasil-prediksi").classList.remove("hidden");
+    }
+
+    async function lanjutPertanyaan() {
+      const res = await fetch("/pertanyaan-lanjutan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama_penyakit: window.top1 })
+      });
+      const data = await res.json();
+      const container = document.getElementById("lanjutan-container");
+      container.innerHTML = "";
+      data.pertanyaan_tambahan.forEach(p => {
+        const key = p.match(/mengalami (.+)\?/)[1];
+        const id = key.replace(/ /g, "_");
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <label>${p}</label><br>
+          <input type="radio" name="${id}" value="1"> Ya
+          <input type="radio" name="${id}" value="0" checked> Tidak
+          <br><br>
+        `;
+        container.appendChild(div);
+      });
+
+      window.gejalaTambahan = data.pertanyaan_tambahan.map(p =>
+        p.match(/mengalami (.+)\?/)[1].replace(/ /g, "_")
+      );
+
+      document.getElementById("pertanyaan-lanjutan").classList.remove("hidden");
+    }
+
+    async function submitPrediksiAkhir() {
+      window.gejalaTambahan.forEach(g => {
+        const val = document.querySelector(`input[name="${g}"]:checked`).value;
+        jawabanAkhir[g] = parseInt(val);
+      });
+
+      const res = await fetch("/prediksi-akhir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jawaban: jawabanAkhir })
+      });
+
+      const data = await res.json();
+      document.getElementById("hasil-akhir").classList.remove("hidden");
+      document.getElementById("final-diagnosis").textContent =
+        "Berdasarkan gejala yang Anda input, kemungkinan penyakit Anda adalah: " + data.prediksi_akhir;
+    }
+
+    function resetForm() {
+    // Reset radio button ke default
+    gejalaAwal.forEach(g => {
+      document.querySelector(`input[name="${g}"][value="0"]`).checked = true;
+    });
+
+    // Kosongkan jawaban
+    for (let k in jawabanAwal) delete jawabanAwal[k];
+    for (let k in jawabanAkhir) delete jawabanAkhir[k];
+
+    // Sembunyikan dan bersihkan hasil
+    document.getElementById("hasil-prediksi").classList.add("hidden");
+    document.getElementById("pertanyaan-lanjutan").classList.add("hidden");
+    document.getElementById("hasil-akhir").classList.add("hidden");
+
+    document.getElementById("prediksi-list").innerHTML = "";
+    document.getElementById("lanjutan-container").innerHTML = "";
+    document.getElementById("final-diagnosis").textContent = "";
+
+    // Reset variabel global
+    window.top10 = [];
+    window.top1 = "";
+    window.gejalaTambahan = [];
+  }
+
+  </script>
+</body>
+</html>
