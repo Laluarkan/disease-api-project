@@ -9,14 +9,15 @@ from fastapi.requests import Request
 from fastapi.staticfiles import StaticFiles
 import os
 
+BASE_DIR = os.path.dirname(__file__)  # Lokasi file main.py
+MODEL_PATH = os.path.join(BASE_DIR, "model.pkl")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as f:
+with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
 
-with open(os.path.join(BASE_DIR, "label_encoder.pkl"), "rb") as f:
-    le = pickle.load(f)
+LABEL_ENCODER_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
+with open(LABEL_ENCODER_PATH, "rb") as f:
+    encoder = pickle.load(f)
 
 with open(os.path.join(BASE_DIR, "model_features.txt"), "r") as f:
     trained_features = [line.strip() for line in f]
@@ -236,7 +237,7 @@ def prediksi_awal(data: GejalaInput):
     input_array = np.array([[input_dict[feat] for feat in trained_features]])
     proba = model.predict_proba(input_array)[0]
     top10_idx = np.argsort(proba)[-10:][::-1]
-    top10_penyakit = le.inverse_transform(top10_idx)
+    top10_penyakit = encoder.inverse_transform(top10_idx)
     top1_penyakit = top10_penyakit[0]
 
     top10_penyakit_ind = [mapping_penyakit_indonesia.get(p, p) for p in top10_penyakit]
@@ -282,7 +283,7 @@ def prediksi_akhir(data: GejalaInput):
 
     input_array = np.array([[input_dict[feat] for feat in trained_features]])
     pred = model.predict(input_array)[0]
-    final_penyakit = le.inverse_transform([pred])[0]
+    final_penyakit = encoder.inverse_transform([pred])[0]
 
     final_penyakit_ind = mapping_penyakit_indonesia.get(final_penyakit, final_penyakit)
 
