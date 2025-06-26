@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from schema import GejalaInput, PenyakitInput
+from app.schema import GejalaInput, PenyakitInput
 import pickle
 import numpy as np
 import pandas as pd
