@@ -10,17 +10,17 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# === Load Model & Encoder ===
-with open("model.pkl", "rb") as f:
+with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as f:
     model = pickle.load(f)
 
-with open("label_encoder.pkl", "rb") as f:
+with open(os.path.join(BASE_DIR, "label_encoder.pkl"), "rb") as f:
     le = pickle.load(f)
 
-with open("model_features.txt", "r") as f:
+with open(os.path.join(BASE_DIR, "model_features.txt"), "r") as f:
     trained_features = [line.strip() for line in f]
-
+    
 # === Load Dataset ===
 df = pd.read_csv("Training (1).csv")
 
