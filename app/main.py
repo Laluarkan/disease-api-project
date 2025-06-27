@@ -22,7 +22,7 @@ with open(LABEL_ENCODER_PATH, "rb") as f:
 with open(os.path.join(BASE_DIR, "model_features.txt"), "r") as f:
     trained_features = [line.strip() for line in f]
 
-df = pd.read_csv(os.path.join(BASE_DIR, "Training (1).csv"))
+df = pd.read_csv(os.path.join(BASE_DIR, "Training.csv"))
 
 # === Mapping Gejala ke Bahasa Indonesia ===
 # (isi mapping_indonesia lengkap sesuai sebelumnya)
